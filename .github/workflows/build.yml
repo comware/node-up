@@ -1,0 +1,32 @@
+name: build
+
+on: [push]
+
+jobs:
+  pre:
+    runs-on: ubuntu-latest
+    steps:
+      - name: dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "${GITHUB_CONTEXT}"
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: check if a tag has not been specified
+        run: |
+          echo "::set-env name=TAG::latest"
+      - name: check if a tag has been specified
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "::set-env name=TAG::${GITHUB_REF#refs/tags/}"
+      - name: build and publish the docker image
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: comware/node-up
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: "${{env.TAG}}"
